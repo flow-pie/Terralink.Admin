@@ -1,10 +1,13 @@
 window.TERRA.ui = {
   toast(message, type = 'info', duration = 4000) {
     const container = document.getElementById('toast-container');
+    const icons = { success: 'check_circle', error: 'error' };
+    const icon = icons[type] || 'info';
+
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.innerHTML = `
-      <span class="material-symbols-outlined" style="font-size:18px;">${type === 'success' ? 'check_circle' : type === 'error' ? 'error' : 'info'}</span>
+      <span class="material-symbols-outlined" style="font-size:18px;">${icon}</span>
       <span>${message}</span>
     `;
     container.appendChild(toast);
@@ -42,9 +45,7 @@ window.TERRA.ui = {
   },
 
   confirm(message, onConfirm) {
-    const body = `
-      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:8px;">${message}</p>
-    `;
+    const body = `<p style="font-size:14px;color:var(--text-secondary);margin-bottom:8px;">${message}</p>`;
     const footer = `
       <button class="btn btn-secondary" onclick="window.TERRA.ui.closeModal()">Cancel</button>
       <button class="btn btn-primary" id="confirm-yes">Confirm</button>
@@ -70,28 +71,14 @@ window.TERRA.ui = {
 
   statusBadge(status) {
     const map = {
-      'Active': 'chip-success',
-      'Approved': 'chip-success',
-      'Paid': 'chip-success',
-      'Verified': 'chip-success',
-      'Settled': 'chip-success',
-      'Completed': 'chip-success',
-      'Pending': 'chip-warning',
-      'Pending Review': 'chip-warning',
-      'Under Review': 'chip-warning',
-      'In Review': 'chip-warning',
-      'Processing': 'chip-warning',
-      'Defaulted': 'chip-error',
-      'Overdue': 'chip-error',
-      'Rejected': 'chip-error',
-      'Failed': 'chip-error',
-      'Update Req': 'chip-error',
-      'Closed': 'chip-info',
-      'Inactive': 'chip-neutral',
-      'On Leave': 'chip-neutral',
-      'Cancelled': 'chip-neutral',
-      'Disbursed': 'chip-info',
-      'Awaiting Disbursement': 'chip-warning'
+      'Active': 'chip-success', 'Approved': 'chip-success', 'Paid': 'chip-success',
+      'Verified': 'chip-success', 'Settled': 'chip-success', 'Completed': 'chip-success',
+      'Pending': 'chip-warning', 'Pending Review': 'chip-warning', 'Under Review': 'chip-warning',
+      'In Review': 'chip-warning', 'Processing': 'chip-warning', 'Awaiting Disbursement': 'chip-warning',
+      'Defaulted': 'chip-error', 'Overdue': 'chip-error', 'Rejected': 'chip-error',
+      'Failed': 'chip-error', 'Update Req': 'chip-error',
+      'Closed': 'chip-info', 'Disbursed': 'chip-info',
+      'Inactive': 'chip-neutral', 'On Leave': 'chip-neutral', 'Cancelled': 'chip-neutral'
     };
     const cls = map[status] || 'chip-neutral';
     return `<span class="chip ${cls}"><span class="chip-dot"></span>${status}</span>`;
@@ -111,5 +98,49 @@ window.TERRA.ui = {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  },
+
+  parseListResponse(res) {
+    if (Array.isArray(res)) return { items: res, total: res.length };
+    if (res && Array.isArray(res.items)) return { items: res.items, total: res.totalCount || res.items.length };
+    return { items: [], total: 0 };
+  },
+
+  renderPagination(current, total, label, onPage) {
+    const totalPages = Math.max(1, Math.ceil(total / 10));
+    const start = (current - 1) * 10 + 1;
+    const end = Math.min(current * 10, total);
+    const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+
+    return `
+      <div class="pagination">
+        <div>Showing <b style="color:var(--text);">${start}</b> to <b style="color:var(--text);">${end}</b> of <b style="color:var(--text);">${total}</b> ${label}</div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button class="page-btn" ${current <= 1 ? 'disabled' : ''} onclick="${onPage}(${current - 1})"><span class="material-symbols-outlined" style="font-size:18px;">chevron_left</span></button>
+          ${pages.map(p => `<button class="page-btn ${p === current ? 'active' : ''}" onclick="${onPage}(${p})">${p}</button>`).join('')}
+          <button class="page-btn" ${current >= totalPages ? 'disabled' : ''} onclick="${onPage}(${current + 1})"><span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span></button>
+        </div>
+      </div>
+    `;
+  },
+
+  downloadCSV(filename, headers, rows) {
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => {
+        const s = String(cell || '');
+        return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
+      }).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 };

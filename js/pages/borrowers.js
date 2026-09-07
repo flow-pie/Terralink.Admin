@@ -1,3 +1,4 @@
+window.TERRA.pages = window.TERRA.pages || {};
 window.TERRA.pages.borrowers = {
   data: [],
   page: 1,
@@ -24,16 +25,9 @@ window.TERRA.pages.borrowers = {
       if (this.kycFilter !== 'All') params.set('VerificationStatus', this.kycFilter);
 
       const res = await window.TERRA.api.get(`/api/clients/?${params}`);
-      if (res && Array.isArray(res.items)) {
-        this.data = res.items;
-        this.total = res.totalCount || res.items.length;
-      } else if (Array.isArray(res)) {
-        this.data = res;
-        this.total = res.length;
-      } else {
-        this.data = [];
-        this.total = 0;
-      }
+      const parsed = window.TERRA.ui.parseListResponse(res);
+      this.data = parsed.items;
+      this.total = parsed.total;
     } catch (e) {
       console.error('Fetch borrowers error:', e);
       this.data = [];
@@ -42,22 +36,23 @@ window.TERRA.pages.borrowers = {
   },
 
   render() {
-    const rows = this.data.map(b => {
-      const avatar = b.avatarUrl
-        ? `<img src="${window.TERRA.ui.escapeHtml(b.avatarUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
-        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;background:var(--bg);border-radius:50%;">${(b.fullName || '?')[0]?.toUpperCase() || '?'}</div>`;
-      const kycStatus = b.verificationStatus || 'PENDING';
-      const kycBadge = kycStatus === 'VERIFIED'
-        ? '<span class="chip chip-success"><span class="chip-dot"></span>Verified</span>'
-        : kycStatus === 'UPDATE REQ' || kycStatus === 'REJECTED'
-          ? '<span class="chip chip-error"><span class="chip-dot"></span>Update Req</span>'
-          : '<span class="chip chip-neutral"><span class="chip-dot"></span>Pending</span>';
+    const avatar = (b) => b.avatarUrl
+      ? `<img src="${window.TERRA.ui.escapeHtml(b.avatarUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;background:var(--bg);border-radius:50%;">${(b.fullName || '?')[0]?.toUpperCase() || '?'}</div>`;
 
+    const kycBadge = (status) => {
+      if (status === 'VERIFIED') return '<span class="chip chip-success"><span class="chip-dot"></span>Verified</span>';
+      if (status === 'UPDATE REQ' || status === 'REJECTED') return '<span class="chip chip-error"><span class="chip-dot"></span>Update Req</span>';
+      return '<span class="chip chip-neutral"><span class="chip-dot"></span>Pending</span>';
+    };
+
+    const rows = this.data.map(b => {
+      const status = b.verificationStatus || 'PENDING';
       return `
         <tr class="clickable" onclick="window.TERRA.pages.borrowers.viewBorrower(${b.id})">
           <td>
             <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:1px solid var(--border);flex-shrink:0;">${avatar}</div>
+              <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:1px solid var(--border);flex-shrink:0;">${avatar(b)}</div>
               <div>
                 <div style="font-weight:700;font-size:14px;">${window.TERRA.ui.escapeHtml(b.fullName || 'Unknown')}</div>
                 <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);">${window.TERRA.ui.escapeHtml(b.employeeNo || b.nationalId || '—')}</div>
@@ -68,7 +63,7 @@ window.TERRA.pages.borrowers = {
             <div style="color:var(--text);font-weight:500;">${window.TERRA.ui.escapeHtml(b.phone || '—')}</div>
             <div style="color:var(--text-muted);font-size:11px;">${window.TERRA.ui.escapeHtml(b.email || '—')}</div>
           </td>
-          <td>${kycBadge}</td>
+          <td>${kycBadge(status)}</td>
           <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;">${b.employeeNo || '—'}</td>
           <td style="color:var(--text-secondary);font-weight:500;">${window.TERRA.ui.escapeHtml(b.address || '—')}</td>
           <td style="text-align:right;">
@@ -80,20 +75,8 @@ window.TERRA.pages.borrowers = {
       `;
     }).join('');
 
-    const totalPages = Math.max(1, Math.ceil(this.total / this.pageSize));
-    const start = (this.page - 1) * this.pageSize + 1;
-    const end = Math.min(this.page * this.pageSize, this.total);
-
-    const paginationHtml = `
-      <div class="pagination">
-        <div>Showing <b style="color:var(--text);">${start}</b> to <b style="color:var(--text);">${end}</b> of <b style="color:var(--text);">${this.total}</b> borrowers</div>
-        <div style="display:flex;align-items:center;gap:4px;">
-          <button class="page-btn" ${this.page <= 1 ? 'disabled' : ''} onclick="window.TERRA.pages.borrowers.goPage(${this.page - 1})"><span class="material-symbols-outlined" style="font-size:18px;">chevron_left</span></button>
-          ${Array.from({length: totalPages}, (_, i) => i + 1).map(p => `<button class="page-btn ${p === this.page ? 'active' : ''}" onclick="window.TERRA.pages.borrowers.goPage(${p})">${p}</button>`).join('')}
-          <button class="page-btn" ${this.page >= totalPages ? 'disabled' : ''} onclick="window.TERRA.pages.borrowers.goPage(${this.page + 1})"><span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span></button>
-        </div>
-      </div>
-    `;
+    const verified = this.data.filter(b => b.verificationStatus === 'VERIFIED').length;
+    const pending = this.data.filter(b => b.verificationStatus === 'PENDING').length;
 
     return `
       <div class="page-header">
@@ -111,11 +94,11 @@ window.TERRA.pages.borrowers = {
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Verified <span class="material-symbols-outlined" style="color:var(--success);">verified</span></div>
-          <div class="kpi-value success">${this.data.filter(b => b.verificationStatus === 'VERIFIED').length}</div>
+          <div class="kpi-value success">${verified}</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Pending Review <span class="material-symbols-outlined" style="color:var(--warning);">pending_actions</span></div>
-          <div class="kpi-value warning">${this.data.filter(b => b.verificationStatus === 'PENDING').length}</div>
+          <div class="kpi-value warning">${pending}</div>
         </div>
       </div>
 
@@ -147,7 +130,7 @@ window.TERRA.pages.borrowers = {
             </tbody>
           </table>
         </div>
-        ${paginationHtml}
+        ${window.TERRA.ui.renderPagination(this.page, this.total, 'borrowers', 'window.TERRA.pages.borrowers.goPage')}
       </div>
     `;
   },
@@ -306,26 +289,16 @@ window.TERRA.pages.borrowers = {
 
   async exportData() {
     try {
-      const csvContent = [
-        ['Name', 'National ID', 'Phone', 'Email', 'Address', 'Status'].join(','),
-        ...this.data.map(b => [
-          `"${(b.fullName || '').replace(/"/g, '""')}"`,
-          `"${(b.nationalId || '').replace(/"/g, '""')}"`,
-          `"${(b.phone || '').replace(/"/g, '""')}"`,
-          `"${(b.email || '').replace(/"/g, '""')}"`,
-          `"${(b.address || '').replace(/"/g, '""')}"`,
-          `"${b.verificationStatus || ''}"`
-        ].join(','))
-      ].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'borrowers.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const headers = ['Name', 'National ID', 'Phone', 'Email', 'Address', 'Status'];
+      const rows = this.data.map(b => [
+        b.fullName || '',
+        b.nationalId || '',
+        b.phone || '',
+        b.email || '',
+        b.address || '',
+        b.verificationStatus || ''
+      ]);
+      window.TERRA.ui.downloadCSV('borrowers.csv', headers, rows);
       window.TERRA.ui.toast('Export downloaded', 'success');
     } catch (e) {
       window.TERRA.ui.toast('Export failed: ' + e.message, 'error');

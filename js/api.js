@@ -3,23 +3,24 @@
     return (window.TERRA && window.TERRA.config) || {};
   }
 
+  function getAuthHeaders() {
+    const token = (window.TERRA && window.TERRA.auth && window.TERRA.auth.getToken)
+      ? window.TERRA.auth.getToken()
+      : null;
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+  }
+
   async function request(path, options = {}) {
     const config = getConfig();
     const url = `${config.apiBase}${path}`;
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers
-    };
-
-    const token = (window.TERRA && window.TERRA.auth && window.TERRA.auth.getToken) ? window.TERRA.auth.getToken() : null;
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    const headers = { ...getAuthHeaders(), ...options.headers };
 
     const res = await fetch(url, { ...options, headers });
 
     if (res.status === 401) {
-      (window.TERRA.auth && window.TERRA.auth.logout) ? window.TERRA.auth.logout() : null;
+      if (window.TERRA.auth && window.TERRA.auth.logout) window.TERRA.auth.logout();
       window.location.reload();
       throw new Error('Session expired');
     }
@@ -62,10 +63,8 @@
     delete: (path) => request(path, { method: 'DELETE' }),
     download: async (path) => {
       const config = getConfig();
-      const token = (window.TERRA && window.TERRA.auth && window.TERRA.auth.getToken) ? window.TERRA.auth.getToken() : null;
-      const url = `${config.apiBase}${path}`;
-      const res = await fetch(url, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      const res = await fetch(`${config.apiBase}${path}`, {
+        headers: getAuthHeaders()
       });
       if (!res.ok) throw new Error(`Download failed: ${res.status}`);
       const blob = await res.blob();
@@ -82,13 +81,9 @@
     },
     postForm: async (path, formData) => {
       const config = getConfig();
-      const url = `${config.apiBase}${path}`;
-      const token = (window.TERRA && window.TERRA.auth && window.TERRA.auth.getToken) ? window.TERRA.auth.getToken() : null;
-      const headers = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-      const res = await fetch(url, {
+      const res = await fetch(`${config.apiBase}${path}`, {
         method: 'POST',
-        headers,
+        headers: getAuthHeaders(),
         body: formData
       });
       if (res.status === 204) return null;
@@ -103,6 +98,4 @@
       return data;
     }
   };
-
-  console.log('[API] window.TERRA.api initialized:', !!window.TERRA.api);
 })();

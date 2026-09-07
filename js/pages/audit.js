@@ -1,3 +1,4 @@
+window.TERRA.pages = window.TERRA.pages || {};
 window.TERRA.pages.audit = {
   data: [],
   page: 1,
@@ -15,27 +16,14 @@ window.TERRA.pages.audit = {
   },
 
   async fetchData() {
-    if (!window.TERRA || !window.TERRA.api) {
-      console.error('[Audit] API module not available');
-      this.data = [];
-      this.total = 0;
-      return;
-    }
     try {
       const params = new URLSearchParams({ Page: this.page, PageSize: this.pageSize });
       if (this.userFilter !== 'All') params.set('Action', this.userFilter);
       if (this.actionFilter !== 'All') params.set('EntityType', this.actionFilter);
       const res = await window.TERRA.api.get(`/api/audit-log/?${params}`);
-      if (Array.isArray(res)) {
-        this.data = res;
-        this.total = res.length;
-      } else if (res && Array.isArray(res.items)) {
-        this.data = res.items;
-        this.total = res.totalCount || res.items.length;
-      } else {
-        this.data = [];
-        this.total = 0;
-      }
+      const parsed = window.TERRA.ui.parseListResponse(res);
+      this.data = parsed.items;
+      this.total = parsed.total;
     } catch (e) {
       console.error('Fetch audit error:', e);
       this.data = [];
@@ -43,19 +31,22 @@ window.TERRA.pages.audit = {
     }
   },
 
+  iconFor(action) {
+    const map = {
+      'Status Update': 'edit_document',
+      'Record Deletion': 'delete_forever',
+      'Risk Parameter Mod': 'tune',
+      'Payment Applied': 'receipt_long',
+      'Loan Disbursed': 'payments',
+      'Borrower Registered': 'person_add',
+      'System Config': 'settings'
+    };
+    return map[action] || 'info';
+  },
+
   render() {
     const rows = this.data.map(l => {
-      const iconMap = {
-        'Status Update': 'edit_document',
-        'Record Deletion': 'delete_forever',
-        'Risk Parameter Mod': 'tune',
-        'Payment Applied': 'receipt_long',
-        'Loan Disbursed': 'payments',
-        'Borrower Registered': 'person_add',
-        'System Config': 'settings'
-      };
-      const icon = iconMap[l.action] || 'info';
-
+      const icon = this.iconFor(l.action);
       return `
         <tr class="clickable" onclick="window.TERRA.pages.audit.viewLog(${l.id})">
           <td class="font-mono" style="font-size:12px;color:var(--text-secondary);">
@@ -86,21 +77,6 @@ window.TERRA.pages.audit = {
         </tr>
       `;
     }).join('');
-
-    const totalPages = Math.max(1, Math.ceil(this.total / this.pageSize));
-    const start = (this.page - 1) * this.pageSize + 1;
-    const end = Math.min(this.page * this.pageSize, this.total);
-
-    const paginationHtml = `
-      <div class="pagination">
-        <div>Showing <b style="color:var(--text);">${start}</b> to <b style="color:var(--text);">${end}</b> of <b style="color:var(--text);">${this.total}</b> events</div>
-        <div style="display:flex;align-items:center;gap:4px;">
-          <button class="page-btn" ${this.page <= 1 ? 'disabled' : ''} onclick="window.TERRA.pages.audit.goPage(${this.page - 1})"><span class="material-symbols-outlined" style="font-size:18px;">chevron_left</span></button>
-          ${Array.from({length: totalPages}, (_, i) => i + 1).map(p => `<button class="page-btn ${p === this.page ? 'active' : ''}" onclick="window.TERRA.pages.audit.goPage(${p})">${p}</button>`).join('')}
-          <button class="page-btn" ${this.page >= totalPages ? 'disabled' : ''} onclick="window.TERRA.pages.audit.goPage(${this.page + 1})"><span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span></button>
-        </div>
-      </div>
-    `;
 
     return `
       <div class="page-header">
@@ -148,7 +124,7 @@ window.TERRA.pages.audit = {
             </tbody>
           </table>
         </div>
-        ${paginationHtml}
+        ${window.TERRA.ui.renderPagination(this.page, this.total, 'events', 'window.TERRA.pages.audit.goPage')}
       </div>
     `;
   },
@@ -219,26 +195,16 @@ window.TERRA.pages.audit = {
 
   async exportData() {
     try {
-      const csvContent = [
-        ['Timestamp', 'User', 'Role', 'Action', 'Entity', 'Details'].join(','),
-        ...this.data.map(l => [
-          `"${window.TERRA.ui.formatDate(l.createdAt)}"`,
-          `"${(l.actorUsername || '').replace(/"/g, '""')}"`,
-          `"${(l.actorRole || '').replace(/"/g, '""')}"`,
-          `"${(l.action || '').replace(/"/g, '""')}"`,
-          `"${(l.entityType || '')}-${l.entityId || ''}"`,
-          `"${JSON.stringify(l.details || {}).replace(/"/g, '""')}"`
-        ].join(','))
-      ].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'audit-log.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const headers = ['Timestamp', 'User', 'Role', 'Action', 'Entity', 'Details'];
+      const rows = this.data.map(l => [
+        window.TERRA.ui.formatDate(l.createdAt),
+        l.actorUsername || '',
+        l.actorRole || '',
+        l.action || '',
+        `${l.entityType || ''}-${l.entityId || ''}`,
+        JSON.stringify(l.details || {})
+      ]);
+      window.TERRA.ui.downloadCSV('audit-log.csv', headers, rows);
       window.TERRA.ui.toast('Export downloaded', 'success');
     } catch (e) {
       window.TERRA.ui.toast('Export failed: ' + e.message, 'error');

@@ -1,3 +1,4 @@
+window.TERRA.pages = window.TERRA.pages || {};
 window.TERRA.pages.officers = {
   data: [],
   page: 1,
@@ -11,26 +12,13 @@ window.TERRA.pages.officers = {
   },
 
   async fetchData() {
-    if (!window.TERRA || !window.TERRA.api) {
-      console.error('[Officers] API module not available');
-      this.data = [];
-      this.total = 0;
-      return;
-    }
     try {
       const params = new URLSearchParams({ Page: this.page, PageSize: this.pageSize });
       if (this.searchQuery) params.set('Search', this.searchQuery);
       const res = await window.TERRA.api.get(`/api/admin/users?role=Loan%20Officer&status=Active&page=${this.page}&pageSize=${this.pageSize}&search=${this.searchQuery ? encodeURIComponent(this.searchQuery) : ''}`);
-      if (Array.isArray(res)) {
-        this.data = res;
-        this.total = res.length;
-      } else if (res && Array.isArray(res.items)) {
-        this.data = res.items;
-        this.total = res.totalCount || res.items.length;
-      } else {
-        this.data = [];
-        this.total = 0;
-      }
+      const parsed = window.TERRA.ui.parseListResponse(res);
+      this.data = parsed.items;
+      this.total = parsed.total;
     } catch (e) {
       console.error('Fetch officers error:', e);
       this.data = [];
@@ -39,52 +27,39 @@ window.TERRA.pages.officers = {
   },
 
   render() {
-    const rows = this.data.map(o => {
-      const avatar = o.avatarUrl
-        ? `<img src="${window.TERRA.ui.escapeHtml(o.avatarUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
-        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;background:var(--bg);border-radius:50%;">${(o.username || '?')[0]?.toUpperCase() || '?'}</div>`;
+    const avatar = (o) => o.avatarUrl
+      ? `<img src="${window.TERRA.ui.escapeHtml(o.avatarUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;background:var(--bg);border-radius:50%;">${(o.username || '?')[0]?.toUpperCase() || '?'}</div>`;
 
-      return `
-        <tr class="clickable" onclick="window.TERRA.pages.officers.viewOfficer(${o.userId || 'null'})">
-          <td>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:1px solid var(--border);flex-shrink:0;">${avatar}</div>
-              <div>
-                <div style="font-weight:700;font-size:14px;">${window.TERRA.ui.escapeHtml(o.username || o.fullName || 'Unknown')}</div>
-                <div style="font-size:12px;color:var(--text-secondary);">${window.TERRA.ui.escapeHtml(o.roleName || 'Staff')}</div>
-              </div>
+    const rows = this.data.map(o => `
+      <tr class="clickable" onclick="window.TERRA.pages.officers.viewOfficer(${o.userId || 'null'})">
+        <td>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:1px solid var(--border);flex-shrink:0;">${avatar(o)}</div>
+            <div>
+              <div style="font-weight:700;font-size:14px;">${window.TERRA.ui.escapeHtml(o.username || o.fullName || 'Unknown')}</div>
+              <div style="font-size:12px;color:var(--text-secondary);">${window.TERRA.ui.escapeHtml(o.roleName || 'Staff')}</div>
             </div>
-          </td>
-          <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-secondary);">${window.TERRA.ui.escapeHtml(o.employeeNo || '—')}</td>
-          <td>
-            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;">${o.email || '—'}</div>
-          </td>
-          <td style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;">${o.lastLogin ? new Date(o.lastLogin).toLocaleDateString() : 'Never'}</td>
-          <td><span class="chip ${o.status === 'Active' ? 'chip-success' : 'chip-neutral'}"><span class="chip-dot"></span>${o.status || 'Active'}</span></td>
-          <td>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;">${o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '—'}</span>
-            </div>
-          </td>
-          <td style="text-align:right;">
-            <button class="icon-btn" onclick="event.stopPropagation();window.TERRA.pages.officers.viewOfficer(${o.userId || 'null'})" title="View Details">
-              <span class="material-symbols-outlined" style="font-size:20px;">visibility</span>
-            </button>
-          </td>
-        </tr>
-      `;
-    }).join('');
-
-    const paginationHtml = `
-      <div class="pagination">
-        <div>Showing <b style="color:var(--text);">${this.total}</b> officers</div>
-        <div style="display:flex;align-items:center;gap:4px;">
-          <button class="page-btn" disabled><span class="material-symbols-outlined" style="font-size:18px;">chevron_left</span></button>
-          <button class="page-btn active">1</button>
-          <button class="page-btn" disabled><span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span></button>
-        </div>
-      </div>
-    `;
+          </div>
+        </td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-secondary);">${window.TERRA.ui.escapeHtml(o.employeeNo || '—')}</td>
+        <td>
+          <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;">${o.email || '—'}</div>
+        </td>
+        <td style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;">${o.lastLogin ? new Date(o.lastLogin).toLocaleDateString() : 'Never'}</td>
+        <td><span class="chip ${o.status === 'Active' ? 'chip-success' : 'chip-neutral'}"><span class="chip-dot"></span>${o.status || 'Active'}</span></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;">${o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '—'}</span>
+          </div>
+        </td>
+        <td style="text-align:right;">
+          <button class="icon-btn" onclick="event.stopPropagation();window.TERRA.pages.officers.viewOfficer(${o.userId || 'null'})" title="View Details">
+            <span class="material-symbols-outlined" style="font-size:20px;">visibility</span>
+          </button>
+        </td>
+      </tr>
+    `).join('');
 
     return `
       <div class="page-header">
@@ -122,7 +97,7 @@ window.TERRA.pages.officers = {
             </tbody>
           </table>
         </div>
-        ${paginationHtml}
+        ${window.TERRA.ui.renderPagination(this.page, this.total, 'officers', 'window.TERRA.pages.officers.goPage')}
       </div>
     `;
   },
@@ -130,6 +105,11 @@ window.TERRA.pages.officers = {
   onSearch(val) {
     this.searchQuery = val;
     window.TERRA.store.state.searchQuery = val;
+    this.refresh();
+  },
+
+  goPage(p) {
+    this.page = p;
     this.refresh();
   },
 
@@ -147,7 +127,6 @@ window.TERRA.pages.officers = {
         window.TERRA.ui.toast('Officer not found', 'error');
         return;
       }
-      console.log('Officer details:', o);
       const body = `
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
           <div style="width:56px;height:56px;border-radius:50%;overflow:hidden;border:2px solid var(--primary);background:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;">
@@ -206,7 +185,6 @@ window.TERRA.pages.officers = {
           <label class="form-label">Role</label>
           <select class="form-select" name="roleName">
             <option value="Loan Officer">Loan Officer</option>
-           
           </select>
         </div>
         <div class="form-group">
@@ -241,4 +219,4 @@ window.TERRA.pages.officers = {
       }
     });
   }
-}
+};

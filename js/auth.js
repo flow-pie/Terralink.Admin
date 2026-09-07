@@ -26,9 +26,6 @@
       if (data?.token && data?.user) {
         this.token = data.token;
         this.user = data.user;
-        console.log('[Auth] Restored session for user:', this.user.name);
-      } else {
-        console.log('[Auth] No existing session found');
       }
     },
 
@@ -40,24 +37,24 @@
       return this.user;
     },
 
-  async login(identifier, password) {
-    if (!window.TERRA || !window.TERRA.api) {
-      throw new Error('System not initialized. Please refresh the page.');
-    }
-    const data = await window.TERRA.api.post('/api/auth/login', {
-      identifier,
-      password
-    });
-    this.token = data.accessToken;
-    this.user = {
-      id: data.user.id,
-      name: data.user.fullName || data.user.username || 'Admin',
-      role: data.user.roleName || 'Admin',
-      email: data.user.email || ''
-    };
-    setStored({ token: this.token, user: this.user });
-    return data;
-  },
+    async login(identifier, password) {
+      if (!window.TERRA || !window.TERRA.api) {
+        throw new Error('System not initialized. Please refresh the page.');
+      }
+      const data = await window.TERRA.api.post('/api/auth/login', {
+        identifier,
+        password
+      });
+      this.token = data.accessToken;
+      this.user = {
+        id: data.user.id,
+        name: data.user.fullName || data.user.username || 'Admin',
+        role: data.user.roleName || 'Admin',
+        email: data.user.email || ''
+      };
+      setStored({ token: this.token, user: this.user });
+      return data;
+    },
 
     async refresh() {
       const data = getStored();

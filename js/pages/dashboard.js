@@ -5,9 +5,7 @@ window.TERRA.pages.dashboard = {
   activity: [],
 
   async init() {
-    console.log('[Dashboard] init started');
     if (!window.TERRA || !window.TERRA.api) {
-      console.error('[Dashboard] API module not available');
       this.stats = {};
       this.portfolio = {};
       this.activity = [];
@@ -22,7 +20,6 @@ window.TERRA.pages.dashboard = {
       this.stats = statsRes;
       this.portfolio = portfolioRes;
       this.activity = Array.isArray(activityRes) ? activityRes : [];
-      console.log('[Dashboard] init complete', this.stats, this.portfolio, this.activity);
     } catch (e) {
       console.error('[Dashboard] init error:', e);
     }
@@ -40,25 +37,12 @@ window.TERRA.pages.dashboard = {
     const pending = p.pendingApplications || 0;
     const overdue = p.overdueLoans || 0;
 
+    const iconMap = { loan: 'payments', client: 'person_add', payment: 'receipt', audit: 'history', user: 'badge', default: 'info' };
+    const colorMap = { loan: 'green', client: 'orange', payment: 'blue', audit: 'red', user: 'green', default: 'blue' };
+
     const activityHtml = activities.length === 0
       ? '<p style="color:var(--text-muted);font-size:13px;">No recent activity.</p>'
       : activities.slice(0, 5).map(a => {
-          const iconMap = {
-            'loan': 'payments',
-            'client': 'person_add',
-            'payment': 'receipt',
-            'audit': 'history',
-            'user': 'badge',
-            'default': 'info'
-          };
-          const colorMap = {
-            'loan': 'green',
-            'client': 'orange',
-            'payment': 'blue',
-            'audit': 'red',
-            'user': 'green',
-            'default': 'blue'
-          };
           const type = a.type?.toLowerCase() || 'default';
           const icon = iconMap[type] || 'info';
           const color = colorMap[type] || 'blue';
@@ -73,6 +57,8 @@ window.TERRA.pages.dashboard = {
             </div>
           `;
         }).join('');
+
+    const collectionPct = p.totalDisbursed > 0 ? Math.round((p.totalRepaid / p.totalDisbursed) * 100) : 0;
 
     return `
       <div class="page-header">
@@ -118,11 +104,11 @@ window.TERRA.pages.dashboard = {
             </div>
             <div style="margin-top:16px;">
               <div style="height:8px;background:var(--bg);border-radius:999px;overflow:hidden;">
-                <div style="height:100%;background:var(--primary);border-radius:999px;width:${p.totalDisbursed > 0 ? Math.round((p.totalRepaid / p.totalDisbursed) * 100) : 0}%;transition:width 0.6s;"></div>
+                <div style="height:100%;background:var(--primary);border-radius:999px;width:${collectionPct}%;transition:width 0.6s;"></div>
               </div>
               <div style="display:flex;justify-content:space-between;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-secondary);">
                 <span>${window.TERRA.ui.formatCurrency(p.totalRepaid || 0)} collected</span>
-                <span style="font-weight:700;color:var(--primary);">${p.totalDisbursed > 0 ? Math.round((p.totalRepaid / p.totalDisbursed) * 100) : 0}% collected</span>
+                <span style="font-weight:700;color:var(--primary);">${collectionPct}% collected</span>
                 <span>${overdue} overdue</span>
               </div>
             </div>

@@ -1,3 +1,4 @@
+window.TERRA.pages = window.TERRA.pages || {};
 window.TERRA.pages.loans = {
   data: [],
   page: 1,
@@ -13,27 +14,14 @@ window.TERRA.pages.loans = {
   },
 
   async fetchData() {
-    if (!window.TERRA || !window.TERRA.api) {
-      console.error('[Loans] API module not available');
-      this.data = [];
-      this.total = 0;
-      return;
-    }
     try {
       const params = new URLSearchParams({ Page: this.page, PageSize: this.pageSize });
       if (this.searchQuery) params.set('Search', this.searchQuery);
       if (this.statusFilter !== 'All') params.set('Status', this.statusFilter);
       const res = await window.TERRA.api.get(`/api/loans/?${params}`);
-      if (Array.isArray(res)) {
-        this.data = res;
-        this.total = res.length;
-      } else if (res && Array.isArray(res.items)) {
-        this.data = res.items;
-        this.total = res.totalCount || res.items.length;
-      } else {
-        this.data = [];
-        this.total = 0;
-      }
+      const parsed = window.TERRA.ui.parseListResponse(res);
+      this.data = parsed.items;
+      this.total = parsed.total;
     } catch (e) {
       console.error('Fetch loans error:', e);
       this.data = [];
@@ -42,41 +30,30 @@ window.TERRA.pages.loans = {
   },
 
   render() {
-    const rows = this.data.map(l => {
-      return `
-        <tr class="clickable" onclick="window.TERRA.pages.loans.viewLoan(${l.id})">
-          <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--primary);">${window.TERRA.ui.escapeHtml(l.loanNo || l.referenceNo || `#${l.id}`)}</td>
-          <td>
-            <div style="font-weight:700;font-size:14px;">${window.TERRA.ui.escapeHtml(l.clientFullName || 'Unknown')}</td>
-            <div style="font-size:12px;color:var(--text-secondary);">${l.loanProductName || '—'}</div>
-          </td>
-          <td style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;">${window.TERRA.ui.formatCurrency(l.approvedAmount || l.balance)}</td>
-          <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-secondary);">${window.TERRA.ui.formatDate(l.submittedAt || l.createdAt)}</td>
-          <td>${window.TERRA.ui.statusBadge(l.status || 'Pending')}</td>
-          <td style="color:var(--text-secondary);font-weight:500;">${l.assignedOfficer || '—'}</td>
-          <td style="text-align:right;">
-            <button class="icon-btn" onclick="event.stopPropagation();window.TERRA.pages.loans.viewLoan(${l.id})" title="View Details">
-              <span class="material-symbols-outlined" style="font-size:20px;">visibility</span>
-            </button>
-          </td>
-        </tr>
-      `;
-    }).join('');
+    const rows = this.data.map(l => `
+      <tr class="clickable" onclick="window.TERRA.pages.loans.viewLoan(${l.id})">
+        <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--primary);">${window.TERRA.ui.escapeHtml(l.loanNo || l.referenceNo || `#${l.id}`)}</td>
+        <td>
+          <div style="font-weight:700;font-size:14px;">${window.TERRA.ui.escapeHtml(l.clientFullName || 'Unknown')}</div>
+          <div style="font-size:12px;color:var(--text-secondary);">${l.loanProductName || '—'}</div>
+        </td>
+        <td style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;">${window.TERRA.ui.formatCurrency(l.approvedAmount || l.balance)}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-secondary);">${window.TERRA.ui.formatDate(l.submittedAt || l.createdAt)}</td>
+        <td>${window.TERRA.ui.statusBadge(l.status || 'Pending')}</td>
+        <td style="color:var(--text-secondary);font-weight:500;">${l.assignedOfficer || '—'}</td>
+        <td style="text-align:right;">
+          <button class="icon-btn" onclick="event.stopPropagation();window.TERRA.pages.loans.viewLoan(${l.id})" title="View Details">
+            <span class="material-symbols-outlined" style="font-size:20px;">visibility</span>
+          </button>
+        </td>
+      </tr>
+    `).join('');
 
-    const totalPages = Math.max(1, Math.ceil(this.total / this.pageSize));
-    const start = (this.page - 1) * this.pageSize + 1;
-    const end = Math.min(this.page * this.pageSize, this.total);
-
-    const paginationHtml = `
-      <div class="pagination">
-        <div>Showing <b style="color:var(--text);">${start}</b> to <b style="color:var(--text);">${end}</b> of <b style="color:var(--text);">${this.total}</b> loans</div>
-        <div style="display:flex;align-items:center;gap:4px;">
-          <button class="page-btn" ${this.page <= 1 ? 'disabled' : ''} onclick="window.TERRA.pages.loans.goPage(${this.page - 1})"><span class="material-symbols-outlined" style="font-size:18px;">chevron_left</span></button>
-          ${Array.from({length: totalPages}, (_, i) => i + 1).map(p => `<button class="page-btn ${p === this.page ? 'active' : ''}" onclick="window.TERRA.pages.loans.goPage(${p})">${p}</button>`).join('')}
-          <button class="page-btn" ${this.page >= totalPages ? 'disabled' : ''} onclick="window.TERRA.pages.loans.goPage(${this.page + 1})"><span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span></button>
-        </div>
-      </div>
-    `;
+    const totalDisbursed = this.data.reduce((a, l) => a + (l.approvedAmount || 0), 0);
+    const totalBalance = this.data.reduce((a, l) => a + (l.balance || 0), 0);
+    const avgProgress = this.data.length > 0
+      ? Math.round(this.data.reduce((a, l) => a + (l.repaymentProgress || 0), 0) / this.data.length) + '%'
+      : '—';
 
     return `
       <div class="page-header">
@@ -98,15 +75,15 @@ window.TERRA.pages.loans = {
       <div class="kpi-grid">
         <div class="kpi-card">
           <div class="kpi-label">Total Disbursed <span class="material-symbols-outlined" style="color:var(--primary);">account_balance_wallet</span></div>
-          <div class="kpi-value">${window.TERRA.ui.formatCurrency(this.data.reduce((a, l) => a + (l.approvedAmount || 0), 0))}</div>
+          <div class="kpi-value">${window.TERRA.ui.formatCurrency(totalDisbursed)}</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Outstanding Principal <span class="material-symbols-outlined" style="color:var(--warning);">pending</span></div>
-          <div class="kpi-value warning">${window.TERRA.ui.formatCurrency(this.data.reduce((a, l) => a + (l.balance || 0), 0))}</div>
+          <div class="kpi-value warning">${window.TERRA.ui.formatCurrency(totalBalance)}</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Collection Rate <span class="material-symbols-outlined" style="color:var(--success);">task_alt</span></div>
-          <div class="kpi-value success">${this.data.length > 0 ? Math.round(this.data.reduce((a, l) => a + (l.repaymentProgress || 0), 0) / this.data.length) + '%' : '—'}</div>
+          <div class="kpi-value success">${avgProgress}</div>
         </div>
       </div>
 
@@ -137,7 +114,7 @@ window.TERRA.pages.loans = {
             </tbody>
           </table>
         </div>
-        ${paginationHtml}
+        ${window.TERRA.ui.renderPagination(this.page, this.total, 'loans', 'window.TERRA.pages.loans.goPage')}
       </div>
     `;
   },
@@ -295,25 +272,15 @@ window.TERRA.pages.loans = {
 
   async exportData() {
     try {
-      const csvContent = [
-        ['Loan ID', 'Borrower', 'Amount', 'Status', 'Date'].join(','),
-        ...this.data.map(l => [
-          `"${(l.loanNo || '').replace(/"/g, '""')}"`,
-          `"${(l.clientFullName || '').replace(/"/g, '""')}"`,
-          `"${l.approvedAmount || 0}"`,
-          `"${l.status || ''}"`,
-          `"${window.TERRA.ui.formatDate(l.submittedAt || l.createdAt)}"`
-        ].join(','))
-      ].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'loans.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const headers = ['Loan ID', 'Borrower', 'Amount', 'Status', 'Date'];
+      const rows = this.data.map(l => [
+        l.loanNo || '',
+        l.clientFullName || '',
+        l.approvedAmount || 0,
+        l.status || '',
+        window.TERRA.ui.formatDate(l.submittedAt || l.createdAt)
+      ]);
+      window.TERRA.ui.downloadCSV('loans.csv', headers, rows);
       window.TERRA.ui.toast('Export downloaded', 'success');
     } catch (e) {
       window.TERRA.ui.toast('Export failed: ' + e.message, 'error');
