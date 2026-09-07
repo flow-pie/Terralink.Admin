@@ -5,7 +5,8 @@ window.TERRA.router = {
     'officers': { title: 'Loan Officers', icon: 'badge' },
     'loans': { title: 'Loans', icon: 'payments' },
     'repayments': { title: 'Repayments', icon: 'receipt_long' },
-    'audit': { title: 'Audit Logs', icon: 'history' }
+    'audit': { title: 'Audit Logs', icon: 'history' },
+    'security': { title: 'Security', icon: 'shield' }
   },
 
   navigate(page) {

@@ -103,24 +103,71 @@
       border-radius: 4px;
       font-size: 11px;
     }
+    .mfa-section {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    .mfa-section.visible {
+      display: block;
+    }
+    .login-section {
+      display: block;
+    }
+    .login-section.hidden {
+      display: none;
+    }
+    .mfa-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      background: var(--bg);
+      border-radius: 50%;
+      margin: 0 auto 16px;
+    }
+    .mfa-icon span {
+      font-size: 24px;
+      color: var(--primary);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
   <div class="login-overlay">
     <form class="login-card" id="loginForm" autocomplete="on">
       <h1>TerraLink</h1>
-      <p class="lede">Sign in to the headquarters console.</p>
+      <p class="lede" id="loginLede">Sign in to the headquarters console.</p>
 
-      <label>Identifier</label>
-      <input type="text" id="loginIdentifier" autocomplete="username" required placeholder="Username, email, or employee no." />
+      <div class="login-section" id="loginSection">
+        <label>Identifier</label>
+        <input type="text" id="loginIdentifier" autocomplete="username" required placeholder="Username, email, or employee no." />
 
-      <label>Password</label>
-      <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="••••••••" />
+        <label>Password</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="••••••••" />
 
-      <p class="err" id="loginError"></p>
-      <button type="submit" id="loginButton">Sign in</button>
+        <p class="err" id="loginError"></p>
+        <button type="submit" id="loginButton">Sign in</button>
+      </div>
 
-      <p class="meta">
+      <div class="mfa-section" id="mfaSection">
+        <div class="mfa-icon">
+          <span class="material-symbols-outlined">lock</span>
+        </div>
+        <p class="lede" style="text-align:center;">Enter the 6-digit code from your authenticator app.</p>
+
+        <label>MFA Code</label>
+        <input type="text" id="mfaCode" name="mfaCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="000000" autocomplete="one-time-code" />
+
+        <p class="err" id="mfaError"></p>
+        <button type="submit" id="mfaButton">Verify</button>
+        <button type="button" id="mfaBack" style="background:transparent;color:var(--text-secondary);margin-top:8px;">Back to login</button>
+      </div>
+
+      <p class="meta" id="loginMeta">
         Default: <strong>admin</strong> / <strong>Admin@terralink26</strong><br/>
         API base: <code id="apiBaseLabel">—</code>
       </p>
@@ -128,11 +175,11 @@
   </div>
 
   <script>
-    // Inline bootstrap to avoid any external JS dependency issues on the login page.
     (function () {
       'use strict';
 
       var API_BASE = 'http://localhost:5031';
+      var mfaToken = null;
 
       function $(id) { return document.getElementById(id); }
 
@@ -141,6 +188,15 @@
         if (el) el.textContent = msg;
         var btn = $('loginButton');
         if (btn) { btn.disabled = false; btn.textContent = 'Sign in'; }
+        var mfaErr = $('mfaError');
+        if (mfaErr) mfaErr.textContent = '';
+      }
+
+      function setMfaError(msg) {
+        var el = $('mfaError');
+        if (el) el.textContent = msg;
+        var btn = $('mfaButton');
+        if (btn) { btn.disabled = false; btn.textContent = 'Verify'; }
       }
 
       function setLoading() {
@@ -150,10 +206,16 @@
         if (btn) { btn.disabled = true; btn.textContent = 'Signing in\u2026'; }
       }
 
+      function setMfaLoading() {
+        var errEl = $('mfaError');
+        if (errEl) errEl.textContent = '';
+        var btn = $('mfaButton');
+        if (btn) { btn.disabled = true; btn.textContent = 'Verifying\u2026'; }
+      }
+
       var baseEl = $('apiBaseLabel');
       if (baseEl) baseEl.textContent = API_BASE;
 
-      // Lightweight storage wrapper
       var Storage = {
         KEY: 'terralink_auth',
         get: function () {
@@ -163,15 +225,78 @@
         clear: function () { localStorage.removeItem(this.KEY); }
       };
 
-      // If already signed in, jump to the app.
       var existing = Storage.get();
       if (existing && existing.token) {
         window.location.href = 'index.html';
         return;
       }
 
+      function showMfa() {
+        $('loginSection').classList.add('hidden');
+        $('mfaSection').classList.add('visible');
+        $('loginLede').textContent = 'Two-factor authentication required.';
+        $('loginMeta').style.display = 'none';
+        $('mfaCode').focus();
+      }
+
+      function showLogin() {
+        $('loginSection').classList.remove('hidden');
+        $('mfaSection').classList.remove('visible');
+        $('loginLede').textContent = 'Sign in to the headquarters console.';
+        $('loginMeta').style.display = 'block';
+        mfaToken = null;
+        $('loginError').textContent = '';
+        $('mfaError').textContent = '';
+      }
+
       $('loginForm').addEventListener('submit', function (e) {
         e.preventDefault();
+
+        if (mfaToken) {
+          var code = ($('mfaCode') || {}).value || '';
+          if (!code || code.length !== 6) {
+            setMfaError('Please enter the 6-digit code.');
+            return;
+          }
+          setMfaLoading();
+
+          fetch(API_BASE + '/api/auth/mfa/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mfaToken: mfaToken, code: code })
+          })
+          .then(function (res) {
+            console.log('[MFA] Verify status:', res.status);
+            return res.json().then(function (data) {
+              console.log('[MFA] Verify response:', JSON.stringify(data));
+              if (res.status === 400) {
+                var msg = (data && data.message) ? data.message : 'Invalid MFA code.';
+                throw new Error(msg);
+              }
+              if (!res.ok) {
+                var msg = (data && data.message) ? data.message : 'Verification failed.';
+                throw new Error(msg);
+              }
+              return data;
+            });
+          })
+          .then(function (data) {
+            var token = data.accessToken;
+            var user = {
+              id: data.user && data.user.id,
+              name: (data.user && (data.user.fullName || data.user.username)) || 'Admin',
+              role: (data.user && data.user.roleName) || 'Admin',
+              email: (data.user && data.user.email) || ''
+            };
+            Storage.set({ token: token, user: user });
+            window.location.href = 'index.html';
+          })
+          .catch(function (err) {
+            setMfaError(err && err.message ? err.message : 'Verification failed.');
+          });
+          return;
+        }
+
         setLoading();
 
         var identifier = ($('loginIdentifier') || {}).value || '';
@@ -197,6 +322,9 @@
               throw new Error('Invalid credentials.');
             });
           }
+          if (res.status === 403) {
+            throw new Error('Account is inactive.');
+          }
           if (!res.ok) {
             return res.json().then(function (data) {
               var msg = (data && data.message) ? data.message : 'Sign-in failed.';
@@ -208,6 +336,17 @@
           return res.json();
         })
         .then(function (data) {
+          console.log('[Login] Response data:', JSON.stringify(data));
+          console.log('[Login] mfaRequired:', data.mfaRequired, 'mfaToken:', !!data.mfaToken);
+          var isMfa = (data.mfaRequired || data.MfaRequired) && (data.mfaToken || data.MfaToken);
+          console.log('[Login] isMfa:', isMfa);
+          if (isMfa) {
+            console.log('[Login] MFA required, showing MFA form');
+            mfaToken = data.mfaToken || data.MfaToken;
+            showMfa();
+            return;
+          }
+          console.log('[Login] Normal login flow');
           var token = data.accessToken;
           var user = {
             id: data.user && data.user.id,
@@ -221,6 +360,10 @@
         .catch(function (err) {
           setError(err && err.message ? err.message : 'Sign-in failed.');
         });
+      });
+
+      $('mfaBack').addEventListener('click', function () {
+        showLogin();
       });
     })();
   </script>
