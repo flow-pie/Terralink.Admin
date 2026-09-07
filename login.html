@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TerraLink Admin Console - Sign in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300..800&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .login-overlay {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0c0a09 0%, #1c1917 100%);
+      padding: 24px;
+    }
+    .login-card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+    }
+    .login-card h1 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 4px;
+      letter-spacing: -0.02em;
+    }
+    .login-card .lede {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+    .login-card label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .login-card input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-family: inherit;
+      margin-bottom: 16px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .login-card input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.08);
+    }
+    .login-card .err {
+      color: var(--error);
+      font-size: 13px;
+      margin-bottom: 12px;
+      min-height: 20px;
+    }
+    .login-card button {
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .login-card button:hover {
+      background: var(--primary-hover);
+    }
+    .login-card button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .login-card .meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 20px;
+      text-align: center;
+      line-height: 1.6;
+    }
+    .login-card .meta code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-overlay">
+    <form class="login-card" id="loginForm" autocomplete="on">
+      <h1>TerraLink</h1>
+      <p class="lede">Sign in to the headquarters console.</p>
+
+      <label>Identifier</label>
+      <input type="text" id="loginIdentifier" autocomplete="username" required placeholder="Username, email, or employee no." />
+
+      <label>Password</label>
+      <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="••••••••" />
+
+      <p class="err" id="loginError"></p>
+      <button type="submit" id="loginButton">Sign in</button>
+
+      <p class="meta">
+        Default: <strong>admin</strong> / <strong>Admin@terralink26</strong><br/>
+        API base: <code id="apiBaseLabel">—</code>
+      </p>
+    </form>
+  </div>
+
+  <script>
+    // Inline bootstrap to avoid any external JS dependency issues on the login page.
+    (function () {
+      'use strict';
+
+      var API_BASE = 'http://localhost:5031';
+
+      function $(id) { return document.getElementById(id); }
+
+      function setError(msg) {
+        var el = $('loginError');
+        if (el) el.textContent = msg;
+        var btn = $('loginButton');
+        if (btn) { btn.disabled = false; btn.textContent = 'Sign in'; }
+      }
+
+      function setLoading() {
+        var errEl = $('loginError');
+        if (errEl) errEl.textContent = '';
+        var btn = $('loginButton');
+        if (btn) { btn.disabled = true; btn.textContent = 'Signing in\u2026'; }
+      }
+
+      var baseEl = $('apiBaseLabel');
+      if (baseEl) baseEl.textContent = API_BASE;
+
+      // Lightweight storage wrapper
+      var Storage = {
+        KEY: 'terralink_auth',
+        get: function () {
+          try { return JSON.parse(localStorage.getItem(this.KEY)); } catch (e) { return null; }
+        },
+        set: function (data) { localStorage.setItem(this.KEY, JSON.stringify(data)); },
+        clear: function () { localStorage.removeItem(this.KEY); }
+      };
+
+      // If already signed in, jump to the app.
+      var existing = Storage.get();
+      if (existing && existing.token) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      $('loginForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        setLoading();
+
+        var identifier = ($('loginIdentifier') || {}).value || '';
+        var password = ($('loginPassword') || {}).value || '';
+
+        if (!identifier || !password) {
+          setError('Please enter both identifier and password.');
+          return;
+        }
+
+        fetch(API_BASE + '/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: identifier, password: password })
+        })
+        .then(function (res) {
+          if (res.status === 401) {
+            return res.json().then(function (data) {
+              var msg = (data && data.message) ? data.message : 'Invalid credentials.';
+              throw new Error(msg);
+            }).catch(function (err) {
+              if (err instanceof Error) throw err;
+              throw new Error('Invalid credentials.');
+            });
+          }
+          if (!res.ok) {
+            return res.json().then(function (data) {
+              var msg = (data && data.message) ? data.message : 'Sign-in failed.';
+              throw new Error(msg);
+            }).catch(function () {
+              throw new Error('Sign-in failed: HTTP ' + res.status);
+            });
+          }
+          return res.json();
+        })
+        .then(function (data) {
+          var token = data.accessToken;
+          var user = {
+            id: data.user && data.user.id,
+            name: (data.user && (data.user.fullName || data.user.username)) || 'Admin',
+            role: (data.user && data.user.roleName) || 'Admin',
+            email: (data.user && data.user.email) || ''
+          };
+          Storage.set({ token: token, user: user });
+          window.location.href = 'index.html';
+        })
+        .catch(function (err) {
+          setError(err && err.message ? err.message : 'Sign-in failed.');
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
