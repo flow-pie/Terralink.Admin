@@ -40,14 +40,8 @@
         <input type="text" id="global-search" placeholder="Search borrowers, loans, transactions..." />
       </div>
       <div class="header-actions">
-        <button class="profile-btn" id="btn-profile">
-          <div class="profile-info">
-            <div class="profile-name" id="profile-name">Administrator</div>
-            <div class="profile-role" id="profile-role">Admin</div>
-          </div>
-          <div class="profile-avatar">
-            <img id="profile-avatar" src="" alt="Profile" />
-          </div>
+        <button class="btn btn-secondary" style="gap:8px;" onclick="window.TERRA.auth.logout();window.TERRA.ui.toast('Logged out','success');window.location.href='login.html';">
+          <span class="material-symbols-outlined" style="font-size:18px;">logout</span>Logout
         </button>
       </div>
     </header>

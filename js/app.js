@@ -15,16 +15,6 @@
     return;
   }
 
-  const user = auth.getUser();
-  const avatarUrl = user?.avatarUrl || window.TERRA.config.defaultAvatar;
-
-  document.getElementById('sidebar-avatar').src = avatarUrl;
-  document.getElementById('profile-avatar').src = avatarUrl;
-  document.getElementById('sidebar-name').textContent = user?.name || 'Administrator';
-  document.getElementById('profile-name').textContent = user?.name || 'Administrator';
-  document.getElementById('sidebar-role').textContent = user?.role || 'Admin';
-  document.getElementById('profile-role').textContent = user?.role || 'Admin';
-
   window.TERRA.router.init();
 
   const searchInput = document.getElementById('global-search');
@@ -53,13 +43,6 @@
   if (notifBtn) {
     notifBtn.addEventListener('click', () => {
       window.TERRA.ui.toast('Notifications panel coming soon', 'info');
-    });
-  }
-
-  const profileBtn = document.getElementById('btn-profile');
-  if (profileBtn) {
-    profileBtn.addEventListener('click', () => {
-      window.TERRA.router.navigate('settings');
     });
   }
 })();
