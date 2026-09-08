@@ -71,7 +71,7 @@ window.TERRA.pages.audit = {
           <td style="max-width:320px;">
             <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--warning-bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;border:1px solid var(--border);">
               <span class="material-symbols-outlined" style="font-size:14px;color:var(--warning);">${icon}</span>
-              ${window.TERRA.ui.escapeHtml(l.details || '—')}
+              ${window.TERRA.ui.formatAuditDetails(l.details)}
             </span>
           </td>
         </tr>
@@ -176,18 +176,25 @@ window.TERRA.pages.audit = {
           <span style="color:var(--text-secondary);">Action</span>
           <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--primary);">${window.TERRA.ui.escapeHtml(log.action || '—')}</span>
         </div>
-        <div style="background:var(--sidebar-bg);color:#a8a29e;padding:16px;border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;border:1px solid rgba(255,255,255,0.08);overflow-x:auto;">
-          <span style="color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">// Cryptographic Audit Payload</span>
-          ${window.TERRA.ui.escapeHtml(JSON.stringify({
-            audit_id: `AUD-${log.id}`,
-            entity: log.entityType,
-            entityId: log.entityId,
-            actor: log.actorUsername,
-            role: log.actorRole,
-            detail: log.details,
-            status: 'VERIFIED_HASH_CHAIN_COMPLIANT'
-          }, null, 2))}
+        <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--text-secondary);display:block;margin-bottom:8px;">Details</span>
+          ${window.TERRA.ui.formatAuditDetailsDetailed(log.details)}
         </div>
+        <details style="margin-top:4px;">
+          <summary style="font-size:11px;color:var(--text-muted);cursor:pointer;font-family:'JetBrains Mono',monospace;">Raw JSON</summary>
+          <div style="background:var(--sidebar-bg);color:#a8a29e;padding:16px;border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;border:1px solid rgba(255,255,255,0.08);overflow-x:auto;margin-top:8px;">
+            <span style="color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">// Raw Audit Payload</span>
+            ${window.TERRA.ui.escapeHtml(JSON.stringify({
+              audit_id: `AUD-${log.id}`,
+              entity: log.entityType,
+              entityId: log.entityId,
+              actor: log.actorUsername,
+              role: log.actorRole,
+              detail: log.details,
+              status: 'VERIFIED_HASH_CHAIN_COMPLIANT'
+            }, null, 2))}
+          </div>
+        </details>
       </div>
     `;
     window.TERRA.ui.showModal('Audit Log Detail', body, '<button class="btn btn-primary" onclick="window.TERRA.ui.closeModal()">Done</button>');
@@ -202,7 +209,7 @@ window.TERRA.pages.audit = {
         l.actorRole || '',
         l.action || '',
         `${l.entityType || ''}-${l.entityId || ''}`,
-        JSON.stringify(l.details || {})
+        window.TERRA.ui.formatAuditDetails(l.details)
       ]);
       window.TERRA.ui.downloadCSV('audit-log.csv', headers, rows);
       window.TERRA.ui.toast('Export downloaded', 'success');

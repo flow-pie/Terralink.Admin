@@ -69,6 +69,172 @@ window.TERRA.ui = {
     });
   },
 
+  formatAuditDetails(details) {
+    if (!details) return '—';
+    if (typeof details === 'string') {
+      try { details = JSON.parse(details); } catch { return details; }
+    }
+    if (typeof details !== 'object' || Array.isArray(details)) return JSON.stringify(details);
+
+    const labelMap = {
+      clientId: 'Client',
+      applicationId: 'Application',
+      loanId: 'Loan',
+      scheduleId: 'Schedule',
+      userId: 'User',
+      roleId: 'Role',
+      status: 'Status',
+      mfaRequired: 'MFA Required',
+      mfaEnabled: 'MFA Enabled',
+      mfaSecretSet: 'MFA Secret Set',
+      isFirstSetup: 'First Setup',
+      disposableIncome: 'Disposable Income',
+      estimatedValue: 'Estimated Value',
+      action: 'Action',
+      entityType: 'Entity Type',
+      entityId: 'Entity ID',
+      email: 'Email',
+      username: 'Username',
+      fullName: 'Full Name',
+      employeeNo: 'Employee No',
+      password: 'Password',
+      phone: 'Phone',
+      address: 'Address',
+      gender: 'Gender',
+      dateOfBirth: 'Date of Birth',
+      amount: 'Amount',
+      paymentMethod: 'Payment Method',
+      paymentDate: 'Payment Date',
+      loanNo: 'Loan No',
+      clientName: 'Client Name',
+      referenceNo: 'Reference No',
+      purpose: 'Purpose',
+      durationMonths: 'Duration',
+      interestRate: 'Interest Rate',
+      balance: 'Balance',
+      repaymentAmount: 'Repayment',
+      repaymentProgress: 'Progress',
+      nextDueDate: 'Next Due',
+      nextInstallmentAmount: 'Next Installment',
+      approvedAmount: 'Approved Amount',
+      requestedAmount: 'Requested Amount',
+      loanProductId: 'Loan Product',
+      loanProductName: 'Product',
+      assignedOfficer: 'Officer',
+      totalClients: 'Total Clients',
+      activeLoans: 'Active Loans',
+      outstandingPortfolio: 'Outstanding',
+      disbursedMtd: 'Disbursed MTD',
+      pendingApplications: 'Pending Apps',
+      overdueLoans: 'Overdue',
+      totalDisbursed: 'Total Disbursed',
+      totalRepaid: 'Total Repaid',
+      totalLoanOfficers: 'Officers'
+    };
+
+    const formatValue = (key, val) => {
+      if (val === null || val === undefined) return 'None';
+      if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+      if (key === 'amount' || key === 'estimatedValue' || key === 'disposableIncome' || key === 'requestedAmount' || key === 'approvedAmount' || key === 'balance' || key === 'repaymentAmount' || key === 'nextInstallmentAmount') {
+        return `KSh ${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      }
+      if (key === 'interestRate') return `${val}%`;
+      if (key === 'repaymentProgress') return `${val}%`;
+      if (key === 'durationMonths') return `${val} months`;
+      return String(val);
+    };
+
+    const parts = Object.entries(details).map(([key, val]) => {
+      const label = labelMap[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+      return `${label}: ${formatValue(key, val)}`;
+    });
+
+    return parts.join(', ');
+  },
+
+  formatAuditDetailsDetailed(details) {
+    if (!details) return '—';
+    if (typeof details === 'string') {
+      try { details = JSON.parse(details); } catch { return window.TERRA.ui.escapeHtml(details); }
+    }
+    if (typeof details !== 'object' || Array.isArray(details)) return window.TERRA.ui.escapeHtml(JSON.stringify(details, null, 2));
+
+    const labelMap = {
+      clientId: 'Client',
+      applicationId: 'Application',
+      loanId: 'Loan',
+      scheduleId: 'Schedule',
+      userId: 'User',
+      roleId: 'Role',
+      status: 'Status',
+      mfaRequired: 'MFA Required',
+      mfaEnabled: 'MFA Enabled',
+      mfaSecretSet: 'MFA Secret Set',
+      isFirstSetup: 'First Setup',
+      disposableIncome: 'Disposable Income',
+      estimatedValue: 'Estimated Value',
+      action: 'Action',
+      entityType: 'Entity Type',
+      entityId: 'Entity ID',
+      email: 'Email',
+      username: 'Username',
+      fullName: 'Full Name',
+      employeeNo: 'Employee No',
+      password: 'Password',
+      phone: 'Phone',
+      address: 'Address',
+      gender: 'Gender',
+      dateOfBirth: 'Date of Birth',
+      amount: 'Amount',
+      paymentMethod: 'Payment Method',
+      paymentDate: 'Payment Date',
+      loanNo: 'Loan No',
+      clientName: 'Client Name',
+      referenceNo: 'Reference No',
+      purpose: 'Purpose',
+      durationMonths: 'Duration',
+      interestRate: 'Interest Rate',
+      balance: 'Balance',
+      repaymentAmount: 'Repayment',
+      repaymentProgress: 'Progress',
+      nextDueDate: 'Next Due',
+      nextInstallmentAmount: 'Next Installment',
+      approvedAmount: 'Approved Amount',
+      requestedAmount: 'Requested Amount',
+      loanProductId: 'Loan Product',
+      loanProductName: 'Product',
+      assignedOfficer: 'Officer',
+      totalClients: 'Total Clients',
+      activeLoans: 'Active Loans',
+      outstandingPortfolio: 'Outstanding',
+      disbursedMtd: 'Disbursed MTD',
+      pendingApplications: 'Pending Apps',
+      overdueLoans: 'Overdue',
+      totalDisbursed: 'Total Disbursed',
+      totalRepaid: 'Total Repaid',
+      totalLoanOfficers: 'Officers'
+    };
+
+    const formatValue = (key, val) => {
+      if (val === null || val === undefined) return '<span style="color:var(--text-muted);">None</span>';
+      if (typeof val === 'boolean') return val ? '<span style="color:var(--success);">Yes</span>' : '<span style="color:var(--error);">No</span>';
+      if (key === 'amount' || key === 'estimatedValue' || key === 'disposableIncome' || key === 'requestedAmount' || key === 'approvedAmount' || key === 'balance' || key === 'repaymentAmount' || key === 'nextInstallmentAmount') {
+        return `<span style="font-family:'JetBrains Mono',monospace;font-weight:700;">KSh ${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`;
+      }
+      if (key === 'interestRate') return `${val}%`;
+      if (key === 'repaymentProgress') return `${val}%`;
+      if (key === 'durationMonths') return `${val} months`;
+      return window.TERRA.ui.escapeHtml(String(val));
+    };
+
+    const rows = Object.entries(details).map(([key, val]) => {
+      const label = labelMap[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+      return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-secondary);">${label}</span><span style="font-weight:600;text-align:right;max-width:60%;">${formatValue(key, val)}</span></div>`;
+    }).join('');
+
+    return `<div style="display:flex;flex-direction:column;gap:2px;">${rows}</div>`;
+  },
+
   statusBadge(status) {
     const map = {
       'Active': 'chip-success', 'Approved': 'chip-success', 'Paid': 'chip-success',
