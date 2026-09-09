@@ -37,6 +37,7 @@
       font-size: 14px;
       color: var(--text-secondary);
       margin-bottom: 24px;
+      margin-top: 32px;
     }
     .login-card label {
       display: block;
@@ -106,6 +107,14 @@
     .mfa-section {
       display: none;
       animation: fadeIn 0.3s ease;
+      padding-top: 24px;
+      margin-bottom: 48px;
+    }
+    .mfa-section .lede {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+      margin-top: 48px;
     }
     .mfa-section.visible {
       display: block;
@@ -124,7 +133,7 @@
       height: 48px;
       background: var(--bg);
       border-radius: 50%;
-      margin: 0 auto 16px;
+      margin: 0 auto 16px auto;
     }
     .mfa-icon span {
       font-size: 24px;
@@ -134,13 +143,40 @@
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+    .login-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    background: var(--primary);
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    }
+    .login-icon span {
+      font-size: 24px;
+      color: var(--primary);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
   </style>
 </head>
 <body>
   <div class="login-overlay">
     <form class="login-card" id="loginForm" autocomplete="on">
-      <h1>TerraLink</h1>
-      <p class="lede" id="loginLede">Sign in to the headquarters console.</p>
+      <div class="login-icon">
+        <span class="material-symbols-outlined"><img src="assets/Logo.svg" alt="Lock" /></span>
+      </div>
+
+      <div style="text-align:center;margin-bottom:8px;color: var(--primary);">
+        <h2>Terralink</h2>
+      </div>
+
+      <p class="lede" id="loginLede">Sign in to the admin console.</p>
 
       <div class="login-section" id="loginSection">
         <label>Identifier</label>
@@ -155,7 +191,7 @@
 
       <div class="mfa-section" id="mfaSection">
         <div class="mfa-icon">
-          <span class="material-symbols-outlined">lock</span>
+          <span class="material-symbols-outlined"><img src="assets/Mobile Phone_Monochromatic.svg" alt="Mobile" /></span>
         </div>
         <p class="lede" style="text-align:center;">Enter the 6-digit code from your authenticator app.</p>
 
@@ -166,11 +202,6 @@
         <button type="submit" id="mfaButton">Verify</button>
         <button type="button" id="mfaBack" style="background:transparent;color:var(--text-secondary);margin-top:8px;">Back to login</button>
       </div>
-
-      <p class="meta" id="loginMeta">
-        Default: <strong>admin</strong> / <strong>Admin@terralink26</strong><br/>
-        API base: <code id="apiBaseLabel">—</code>
-      </p>
     </form>
   </div>
 
@@ -235,15 +266,16 @@
         $('loginSection').classList.add('hidden');
         $('mfaSection').classList.add('visible');
         $('loginLede').textContent = 'Two-factor authentication required.';
-        $('loginMeta').style.display = 'none';
+        $('loginLede').style.color = 'var(--text-secondary)';
+        $('loginLede').style.fontWeight = '600';
+        $('loginLede').style.justifySelf = 'center';
         $('mfaCode').focus();
       }
 
       function showLogin() {
         $('loginSection').classList.remove('hidden');
         $('mfaSection').classList.remove('visible');
-        $('loginLede').textContent = 'Sign in to the headquarters console.';
-        $('loginMeta').style.display = 'block';
+        $('loginLede').textContent = 'Sign in to the admin console.';
         mfaToken = null;
         $('loginError').textContent = '';
         $('mfaError').textContent = '';

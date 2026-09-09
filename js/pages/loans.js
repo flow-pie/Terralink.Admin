@@ -38,9 +38,9 @@ window.TERRA.pages.loans = {
           <div style="font-size:12px;color:var(--text-secondary);">${l.loanProductName || '—'}</div>
         </td>
         <td style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;">${window.TERRA.ui.formatCurrency(l.approvedAmount || l.balance)}</td>
-        <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-secondary);">${window.TERRA.ui.formatDate(l.submittedAt || l.createdAt)}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-secondary);">${window.TERRA.ui.formatCurrency(l.penaltiesAccrued || 0)}</td>
         <td>${window.TERRA.ui.statusBadge(l.status || 'Pending')}</td>
-        <td style="color:var(--text-secondary);font-weight:500;">${l.assignedOfficer || '—'}</td>
+        <td style="color:var(--text-secondary);font-weight:500;">${window.TERRA.ui.formatCurrency(l.outstandingAmount || 0)}</td>
         <td style="text-align:right;">
           <button class="icon-btn" onclick="event.stopPropagation();window.TERRA.pages.loans.viewLoan(${l.id})" title="View Details">
             <span class="material-symbols-outlined" style="font-size:20px;">visibility</span>
@@ -107,7 +107,7 @@ window.TERRA.pages.loans = {
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Loan ID</th><th>Borrower</th><th>Amount</th><th>Date</th><th>Status</th><th>Officer</th><th style="text-align:right;">Actions</th></tr>
+              <tr><th>Loan ID</th><th>Borrower</th><th>Amount</th><th>Penalties Accrued</th><th>Status</th><th>Outstanding Amount</th><th style="text-align:right;">Actions</th></tr>
             </thead>
             <tbody>
               ${rows || '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">No loans found.</td></tr>'}

@@ -70,7 +70,7 @@ window.TERRA.pages.dashboard = {
 
       <div class="kpi-grid">
         <div class="kpi-card">
-          <div class="kpi-label">Total Clients <span class="material-symbols-outlined" style="color:var(--text);">group</span></div>
+          <div class="kpi-label">Total Borrowers <span class="material-symbols-outlined" style="color:var(--text);">group</span></div>
           <div class="kpi-value">${totalClients.toLocaleString()}</div>
           <span class="chip chip-success" style="margin-top:8px;"><span class="chip-dot"></span>Registered</span>
         </div>
