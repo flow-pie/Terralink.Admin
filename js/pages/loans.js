@@ -21,6 +21,7 @@ window.TERRA.pages.loans = {
       const res = await window.TERRA.api.get(`/api/loans/?${params}`);
       const parsed = window.TERRA.ui.parseListResponse(res);
       this.data = parsed.items;
+      console.log('Fetched loans:', this.data);
       this.total = parsed.total;
     } catch (e) {
       console.error('Fetch loans error:', e);
@@ -32,15 +33,15 @@ window.TERRA.pages.loans = {
   render() {
     const rows = this.data.map(l => `
       <tr class="clickable" onclick="window.TERRA.pages.loans.viewLoan(${l.id})">
-        <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--primary);">${window.TERRA.ui.escapeHtml(l.loanNo || l.referenceNo || `#${l.id}`)}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--primary);">${window.TERRA.ui.escapeHtml(l.loanNo ||`#${l.id}`)}</td>
         <td>
           <div style="font-weight:700;font-size:14px;">${window.TERRA.ui.escapeHtml(l.clientFullName || 'Unknown')}</div>
-          <div style="font-size:12px;color:var(--text-secondary);">${l.loanProductName || '—'}</div>
+          <div style="font-size:12px;color:var(--text-secondary);">${l.clientId || '_'}</div>
         </td>
-        <td style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;">${window.TERRA.ui.formatCurrency(l.approvedAmount || l.balance)}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;">${window.TERRA.ui.formatCurrency(l.repaymentAmount)}</td>
         <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-secondary);">${window.TERRA.ui.formatCurrency(l.penaltiesAccrued || 0)}</td>
         <td>${window.TERRA.ui.statusBadge(l.status || 'Pending')}</td>
-        <td style="color:var(--text-secondary);font-weight:500;">${window.TERRA.ui.formatCurrency(l.outstandingAmount || 0)}</td>
+        <td style="color:var(--text-secondary);font-weight:500;">${window.TERRA.ui.formatCurrency(l.balance)}</td>
         <td style="text-align:right;">
           <button class="icon-btn" onclick="event.stopPropagation();window.TERRA.pages.loans.viewLoan(${l.id})" title="View Details">
             <span class="material-symbols-outlined" style="font-size:20px;">visibility</span>
@@ -65,9 +66,6 @@ window.TERRA.pages.loans = {
         <div style="display:flex;gap:10px;">
           <button class="btn btn-secondary" onclick="window.TERRA.pages.loans.exportData()">
             <span class="material-symbols-outlined" style="font-size:16px;">download</span>Export
-          </button>
-          <button class="btn btn-primary" onclick="window.TERRA.pages.loans.openNewLoanModal()">
-            <span class="material-symbols-outlined" style="font-size:16px;">add</span>New Loan
           </button>
         </div>
       </div>
@@ -107,7 +105,7 @@ window.TERRA.pages.loans = {
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Loan ID</th><th>Borrower</th><th>Amount</th><th>Penalties Accrued</th><th>Status</th><th>Outstanding Amount</th><th style="text-align:right;">Actions</th></tr>
+              <tr><th>Loan ID</th><th>Borrower</th><th>Amount</th><th>Penalties Accrued</th><th>Status</th><th>Outstanding Balance</th><th style="text-align:right;">Actions</th></tr>
             </thead>
             <tbody>
               ${rows || '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">No loans found.</td></tr>'}
@@ -158,15 +156,11 @@ window.TERRA.pages.loans = {
           </div>
           <div>
             <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Balance</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;">${window.TERRA.ui.formatCurrency(l.balance)}</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;">${window.TERRA.ui.formatCurrency(l.outstandingAmount)}</div>
           </div>
           <div>
-            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Repayment</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;">${window.TERRA.ui.formatCurrency(l.repaymentAmount)}</div>
-          </div>
-          <div>
-            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Progress</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;">${l.repaymentProgress || 0}%</div>
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Total Repayment</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;">${window.TERRA.ui.formatCurrency(l.totalRepayment)}</div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:10px;">
@@ -180,7 +174,7 @@ window.TERRA.pages.loans = {
           </div>
           <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
             <span style="color:var(--text-secondary);">Next Due</span>
-            <span style="font-weight:600;font-family:'JetBrains Mono',monospace;">${window.TERRA.ui.formatDate(l.nextDueDate)}</span>
+            <span style="font-weight:600;font-family:'JetBrains Mono',monospace;">${l.nextDueDate ? window.TERRA.ui.formatDate(l.nextDueDate) : 'N/A'}</span>
           </div>
           <div style="display:flex;justify-content:space-between;padding:8px 0;">
             <span style="color:var(--text-secondary);">Next Installment</span>
@@ -192,63 +186,6 @@ window.TERRA.pages.loans = {
     } catch (e) {
       window.TERRA.ui.toast(e.message, 'error');
     }
-  },
-
-  openNewLoanModal() {
-    const body = `
-      <form id="new-loan-form">
-        <div class="form-group">
-          <label class="form-label">Borrower</label>
-          <select class="form-select" name="clientId" id="loan-borrower-select" required>
-            <option value="">Select borrower...</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Loan Product</label>
-          <select class="form-select" name="loanProductId" id="loan-product-select" required>
-            <option value="">Select product...</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Requested Amount</label>
-          <input class="form-input" name="requestedAmount" type="number" required placeholder="e.g. 50000" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Duration (Months)</label>
-          <input class="form-input" name="durationMonths" type="number" required placeholder="e.g. 12" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Purpose</label>
-          <textarea class="form-textarea" name="purpose" placeholder="Purpose of the loan..."></textarea>
-        </div>
-      </form>
-    `;
-    const footer = `
-      <button class="btn btn-secondary" onclick="window.TERRA.ui.closeModal()">Cancel</button>
-      <button class="btn btn-primary" id="btn-save-loan">Submit Application</button>
-    `;
-    window.TERRA.ui.showModal('New Loan Application', body, footer);
-
-    this.loadLoanFormOptions().then(() => {
-      document.getElementById('btn-save-loan').addEventListener('click', async () => {
-        const form = document.getElementById('new-loan-form');
-        const fd = new FormData(form);
-        const data = {
-          loanProductId: parseInt(fd.get('loanProductId')),
-          requestedAmount: parseFloat(fd.get('requestedAmount')),
-          durationMonths: parseInt(fd.get('durationMonths')),
-          purpose: fd.get('purpose') || ''
-        };
-        try {
-          await window.TERRA.api.post('/api/loan-applications/', data);
-          window.TERRA.ui.toast('Loan application submitted', 'success');
-          window.TERRA.ui.closeModal();
-          this.refresh();
-        } catch (e) {
-          window.TERRA.ui.toast(e.message, 'error');
-        }
-      });
-    });
   },
 
   async loadLoanFormOptions() {

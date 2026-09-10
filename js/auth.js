@@ -53,9 +53,8 @@
       this.token = data.accessToken;
       this.user = {
         id: data.user.id,
-        name: data.user.fullName || data.user.username || 'Admin',
-        role: data.user.roleName || 'Admin',
-        email: data.user.email || ''
+        employeeNo: data.user.employeeNo || 'Admin',
+        role: data.user.roleName || 'Admin'
       };
       setStored({ token: this.token, user: this.user });
       return data;
@@ -69,9 +68,8 @@
       this.token = data.accessToken;
       this.user = {
         id: data.user.id,
-        name: data.user.fullName || data.user.username || 'Admin',
-        role: data.user.roleName || 'Admin',
-        email: data.user.email || ''
+        employeeNo: data.user.employeeNo || 'Admin',
+        role: data.user.roleName || 'Admin'
       };
       setStored({ token: this.token, user: this.user });
       return data;

@@ -167,7 +167,7 @@ window.TERRA.ui = {
       userId: 'User',
       roleId: 'Role',
       status: 'Status',
-      mfaRequired: 'MFA Required',
+      mfaRequired: 'MFA Enabled',
       mfaEnabled: 'MFA Enabled',
       mfaSecretSet: 'MFA Secret Set',
       isFirstSetup: 'First Setup',
@@ -216,10 +216,10 @@ window.TERRA.ui = {
     };
 
     const formatValue = (key, val) => {
-      if (val === null || val === undefined) return '<span style="color:var(--text-muted);">None</span>';
-      if (typeof val === 'boolean') return val ? '<span style="color:var(--success);">Yes</span>' : '<span style="color:var(--error);">No</span>';
+      if (val === null || val === undefined) return '<span style="color:var(--text-muted);"> None</span>';
+      if (typeof val === 'boolean') return val ? '<span style="color:var(--success); padding:4px 8px;"> Yes </span>' : '<span style="color:var(--error); padding:4px 8px;"> No </span>';
       if (key === 'amount' || key === 'estimatedValue' || key === 'disposableIncome' || key === 'requestedAmount' || key === 'approvedAmount' || key === 'balance' || key === 'repaymentAmount' || key === 'nextInstallmentAmount') {
-        return `<span style="font-family:'JetBrains Mono',monospace;font-weight:700;">KSh ${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`;
+        return `<span style="font-family:'JetBrains Mono',monospace;font-weight:700;"> KSh ${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`;
       }
       if (key === 'interestRate') return `${val}%`;
       if (key === 'repaymentProgress') return `${val}%`;
@@ -229,8 +229,8 @@ window.TERRA.ui = {
 
     const rows = Object.entries(details).map(([key, val]) => {
       const label = labelMap[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
-      return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-secondary);">${label}</span><span style="font-weight:600;text-align:right;max-width:60%;">${formatValue(key, val)}</span></div>`;
-    }).join('');
+      return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-secondary);"> ${label}</span><span style="font-weight:600;text-align:right;max-width:60%;">${formatValue(key, val)}</span></div>`;
+    }).join(' ');
 
     return `<div style="display:flex;flex-direction:column;gap:2px;">${rows}</div>`;
   },

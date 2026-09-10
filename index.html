@@ -88,6 +88,12 @@
       }
       return false;
     };
+
+    const user = window.TERRA.auth.getUser();    
+    console.log('User data from auth:', user);
+    document.getElementById('sidebar-name').textContent = user.employeeNo || 'Administrator';
+    document.getElementById('sidebar-role').textContent = user.role || 'Admin';
+    document.getElementById('sidebar-avatar').src = user.avatarUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.employeeNo || 'Admin') + '&background=0D8ABC&color=fff&size=64';
   </script>
 </body>
 </html>

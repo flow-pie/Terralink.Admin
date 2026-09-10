@@ -69,9 +69,9 @@ window.TERRA.pages.audit = {
           </td>
           <td class="font-mono" style="font-weight:700;color:var(--primary);">${window.TERRA.ui.escapeHtml(l.entityType || '—')}-${l.entityId || '—'}</td>
           <td style="max-width:320px;">
-            <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--warning-bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;border:1px solid var(--border);">
-              <span class="material-symbols-outlined" style="font-size:14px;color:var(--warning);">${icon}</span>
-              ${window.TERRA.ui.formatAuditDetails(l.details)}
+            <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;">
+              <span class="material-symbols-outlined" style="font-size:14px;">${icon}</span>
+              ${window.TERRA.ui.formatAuditDetailsDetailed(l.details)}
             </span>
           </td>
         </tr>

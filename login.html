@@ -316,9 +316,8 @@
             var token = data.accessToken;
             var user = {
               id: data.user && data.user.id,
-              name: (data.user && (data.user.fullName || data.user.username)) || 'Admin',
-              role: (data.user && data.user.roleName) || 'Admin',
-              email: (data.user && data.user.email) || ''
+              employeeNo: (data.user && data.user.employeeNo) || 'Admin',
+              roleName: (data.user && data.user.roleName) || 'Admin',
             };
             Storage.set({ token: token, user: user });
             window.location.href = 'index.html';
@@ -382,9 +381,8 @@
           var token = data.accessToken;
           var user = {
             id: data.user && data.user.id,
-            name: (data.user && (data.user.fullName || data.user.username)) || 'Admin',
-            role: (data.user && data.user.roleName) || 'Admin',
-            email: (data.user && data.user.email) || ''
+            employeeNo: (data.user && (data.user.employeeNo || data.user.username)) || 'Admin',
+            roleName: (data.user && data.user.roleName) || 'Admin'
           };
           Storage.set({ token: token, user: user });
           window.location.href = 'index.html';

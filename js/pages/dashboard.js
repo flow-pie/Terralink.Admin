@@ -135,7 +135,8 @@ window.TERRA.pages.dashboard = {
         
       </div>
 
-      <div class="bento-row bento-3-reverse">
+      <div style="margin-top:24px; background:var(--surface); border-radius:var(--radius); padding:16px; border:1px solid var(--border);" >
+        <div class="bento-row bento-3-reverse">
         <div class="card" style="background:var(--primary);color:#fff;border-color:var(--primary-hover);">
           <div style="position:relative;z-index:1;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -162,7 +163,7 @@ window.TERRA.pages.dashboard = {
             <span class="chip chip-error font-mono">${overdue + pending} Items</span>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div style="padding:16px;background:#fff;border-radius:var(--radius);border:1px solid var(--border);cursor:pointer;" onclick="window.TERRA.router.navigate('loans')">
+            <div style="padding:16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);cursor:pointer;" onclick="window.TERRA.router.navigate('loans')">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
                 <span class="label-caps" style="color:var(--error);margin:0;">OVERDUE</span>
                 <span style="width:8px;height:8px;background:var(--error);border-radius:50%;display:inline-block;animation:ping 1.6s ease-in-out infinite;"></span>
@@ -171,7 +172,7 @@ window.TERRA.pages.dashboard = {
               <p style="font-size:11px;color:var(--text-secondary);margin:4px 0 8px;">Past grace period</p>
               <div style="font-size:12px;color:var(--primary);font-weight:600;display:flex;align-items:center;gap:4px;">Review <span class="material-symbols-outlined" style="font-size:14px;">arrow_forward</span></div>
             </div>
-            <div style="padding:16px;background:#fff;border-radius:var(--radius);border:1px solid var(--border);cursor:pointer;" onclick="window.TERRA.router.navigate('loans')">
+            <div style="padding:16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);cursor:pointer;" onclick="window.TERRA.router.navigate('loans')">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
                 <span class="label-caps" style="color:var(--warning);margin:0;">PENDING APPS</span>
                 <span style="width:8px;height:8px;background:var(--warning);border-radius:50%;display:inline-block;"></span>
@@ -228,6 +229,7 @@ window.TERRA.pages.dashboard = {
             </a>
           </div>
         </div>
+      </div>
       </div>
     `;
   },

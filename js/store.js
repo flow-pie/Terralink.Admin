@@ -9,13 +9,6 @@ window.TERRA.store = {
     auditLogs: [],
     notifications: [],
     dashboardStats: null,
-    reports: {},
-    settings: {
-      maxLoanLimit: 2500000,
-      baseInterestRate: 8.5,
-      defaultThresholdDays: 60,
-      officerMaxCapacity: 50
-    },
     pagination: {
       borrowers: { page: 1, pageSize: 10, total: 0 },
       officers: { page: 1, pageSize: 10, total: 0 },
